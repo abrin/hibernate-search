@@ -1,14 +1,13 @@
 # Typically *NIX text editors, by default, append '~' to files on saving to make backups
 *~
 
-# Gradle work directory
-.gradle
-buildSrc/.gradle
+#Checkstyle
+.checkstyle
 
-# Build output directies
+# Build output directories
 target
-build
-hibernate-search/bin/*
+bin
+
 # IntelliJ specific files/directories
 /out
 .idea
@@ -27,6 +26,11 @@ atlassian-ide-plugin.xml
 # NetBeans specific files/directories
 .nbattrs
 
+# Sublime
+*.sublime-*
+
 # Miscellaneous
 *.log
+*.sh
 .clover
+
