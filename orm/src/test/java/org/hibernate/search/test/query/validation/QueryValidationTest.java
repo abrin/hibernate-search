@@ -91,8 +91,8 @@ public class QueryValidationTest extends SearchTestBase {
 
     @Test
     public void testStringWithNumericRange() {
-        TermQuery query = new TermQuery( new Term("value", "bar") );
-        NumericRangeQuery<Long> nrq = NumericRangeQuery.newLongRange("num", 1L, 1L, true, true);
+        TermQuery query = new TermQuery( new Term("text", "bar") );
+        NumericRangeQuery<Long> nrq = NumericRangeQuery.newLongRange("value", 1L, 1L, true, true);
         
         BooleanQuery bq = new BooleanQuery();
         bq.add(query, Occur.SHOULD);
@@ -110,8 +110,8 @@ public class QueryValidationTest extends SearchTestBase {
     }
     @Test
     public void testStringWithNumericTerm() {
-        TermQuery query = new TermQuery( new Term("value", "bar") );
-        TermQuery nq = new TermQuery( new Term("num", "1") );
+        TermQuery query = new TermQuery( new Term("text", "bar") );
+        TermQuery nq = new TermQuery( new Term("value", "1") );
         
         BooleanQuery bq = new BooleanQuery();
         bq.add(query, Occur.SHOULD);
@@ -131,9 +131,8 @@ public class QueryValidationTest extends SearchTestBase {
     @Test
     public void testRawLuceneWithNumericRange() {
         try {
-            Query query = new MatchAllDocsQuery();
-            QueryParser parser = new MultiFieldQueryParser(new String[]{"id","value","num"},new StandardAnalyzer());
-            query = parser.parse("+(num:[1 TO 1] value:test)");
+            QueryParser parser = new MultiFieldQueryParser(new String[]{"id","value","text"},new StandardAnalyzer());
+            Query query = parser.parse("+(value:[1 TO 1] text:test)");
             FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
             fullTextQuery.list();
         }
@@ -152,7 +151,7 @@ public class QueryValidationTest extends SearchTestBase {
         try {
             Query query = new MatchAllDocsQuery();
             QueryParser parser = new MultiFieldQueryParser(new String[]{"id","value","num"},new StandardAnalyzer());
-            query = parser.parse("+(num:1 value:test)");
+            query = parser.parse("+(value:1 text:test)");
             FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
             fullTextQuery.list();
         }
@@ -205,7 +204,10 @@ public class QueryValidationTest extends SearchTestBase {
 		private long id;
 
 		@Field
-		private long value;
+		private Long value;
+		
+		@Field
+		private String text;
 	}
 
 	@Entity
