@@ -10,13 +10,21 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
+import org.apache.commons.logging.Log;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.xml.builders.NumericRangeQueryBuilder;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.hibernate.Transaction;
 import org.hibernate.search.FullTextQuery;
 import org.hibernate.search.FullTextSession;
@@ -67,19 +75,98 @@ public class QueryValidationTest extends SearchTestBase {
 		}
 	}
 
-	@Test
-	public void testTargetNumericEncodedFieldWithStringQueryThrowsException() {
-		TermQuery query = new TermQuery( new Term("value", "bar") );
-		FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
-		try {
-			fullTextQuery.list();
-			fail();
-		}
-		catch (SearchException e) {
-			assertTrue( "Unexpected error message: " + e.getMessage(), e.getMessage().startsWith( "HSEARCH000233" ) );
-		}
-	}
+    @Test
+    public void testTargetNumericEncodedFieldWithStringQueryThrowsException() {
+        TermQuery query = new TermQuery( new Term("value", "bar") );
+        FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
+        try {
+            fullTextQuery.list();
+            fail();
+        }
+        catch (SearchException e) {
+            assertTrue( "Unexpected error message: " + e.getMessage(), e.getMessage().startsWith( "HSEARCH000233" ) );
+        }
+    }
+    
 
+    @Test
+    public void testStringWithNumericRange() {
+        TermQuery query = new TermQuery( new Term("value", "bar") );
+        NumericRangeQuery<Long> nrq = NumericRangeQuery.newLongRange("num", 1L, 1L, true, true);
+        
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(query, Occur.SHOULD);
+        bq.add(nrq, Occur.SHOULD);
+
+        System.out.println("*** bq:" + bq.toString());
+        FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( bq, B.class );
+        try {
+            fullTextQuery.list();
+            fail();
+        }
+        catch (SearchException e) {
+            assertTrue( "Unexpected error message: " + e.getMessage(), e.getMessage().startsWith( "HSEARCH000233" ) );
+        }
+    }
+    @Test
+    public void testStringWithNumericTerm() {
+        TermQuery query = new TermQuery( new Term("value", "bar") );
+        TermQuery nq = new TermQuery( new Term("num", "1") );
+        
+        BooleanQuery bq = new BooleanQuery();
+        bq.add(query, Occur.SHOULD);
+        bq.add(nq, Occur.SHOULD);
+
+        System.out.println("*** bq:" + bq.toString());
+        FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( bq, B.class );
+        try {
+            fullTextQuery.list();
+            fail();
+        }
+        catch (SearchException e) {
+            assertTrue( "Unexpected error message: " + e.getMessage(), e.getMessage().startsWith( "HSEARCH000233" ) );
+        }
+    }
+    
+    @Test
+    public void testRawLuceneWithNumericRange() {
+        try {
+            Query query = new MatchAllDocsQuery();
+            QueryParser parser = new MultiFieldQueryParser(new String[]{"id","value","num"},new StandardAnalyzer());
+            query = parser.parse("+(num:[1 TO 1] value:test)");
+            FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
+            fullTextQuery.list();
+        }
+        catch (SearchException e) {
+            e.printStackTrace();
+            fail("should not have an exception");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("should not have an exception");
+        }
+    }
+
+    @Test
+    public void testRawLuceneWithNumericValue() {
+        try {
+            Query query = new MatchAllDocsQuery();
+            QueryParser parser = new MultiFieldQueryParser(new String[]{"id","value","num"},new StandardAnalyzer());
+            query = parser.parse("+(num:1 value:test)");
+            FullTextQuery fullTextQuery = fullTextSession.createFullTextQuery( query, B.class );
+            fullTextQuery.list();
+        }
+        catch (SearchException e) {
+            e.printStackTrace();
+            fail("should not have an exception");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            fail("should not have an exception");
+        }
+    }
+
+   
 	@Test
 	public void testTargetingNonIndexedEntityThrowsException() {
 		TermQuery query = new TermQuery( new Term("foo", "bar") );
